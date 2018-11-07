@@ -490,7 +490,9 @@ public interface MethodRegistry {
                         && !node.getSort().isMadeVisible()
                         && methodDescription.isPublic()
                         && !(methodDescription.isAbstract() || methodDescription.isFinal())
-                        && methodDescription.getDeclaringType().isPackagePrivate()) {
+                        && methodDescription.getDeclaringType().isPackagePrivate()
+                        // Adding this fixes AgentBuidlerDefaultApplicationTest.testPackageHiddenInterface
+                        /*&& !methodDescription.isDefaultMethod()*/) {
                     // Visibility bridges are required for public classes that inherit a public method from a package-private class.
                     implementations.put(methodDescription, Prepared.Entry.forVisibilityBridge(methodDescription, node.getVisibility()));
                 }

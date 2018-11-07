@@ -1,5 +1,6 @@
 package net.bytebuddy.agent.builder;
 
+import test.HiddenInterfaceTestClass;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.description.type.TypeDescription;
@@ -736,6 +737,27 @@ public class AgentBuilderDefaultApplicationTest {
             Class<?> sampleFactory = classLoader.loadClass(LAMBDA_SAMPLE_FACTORY);
             Object instance = sampleFactory.getDeclaredMethod("capturingWithArguments", String.class).invoke(sampleFactory.getDeclaredConstructor().newInstance(), FOO);
             assertThat(instance.getClass().getMethod("apply", Object.class).invoke(instance, FOO), is((Object) BAR));
+        } finally {
+            ByteBuddyAgent.getInstrumentation().removeTransformer(classFileTransformer);
+            AgentBuilder.LambdaInstrumentationStrategy.release(classFileTransformer, ByteBuddyAgent.getInstrumentation());
+        }
+    }
+
+    @Test
+    @JavaVersionRule.Enforce(8)
+    @AgentAttachmentRule.Enforce
+    //@IntegrationRule.Enforce
+    //FIXME: this test fails because method bridges to hidden interfaces do not work with lambdas
+    public void testPackageHiddenInterface() throws Exception {
+        assertThat(ByteBuddyAgent.install(), instanceOf(Instrumentation.class));
+        ClassLoader classLoader = lambdaSamples();
+        ClassFileTransformer classFileTransformer = new AgentBuilder.Default()
+                .with(poolStrategy)
+                .ignore(none())
+                .with(AgentBuilder.LambdaInstrumentationStrategy.ENABLED)
+                .installOn(ByteBuddyAgent.getInstrumentation());
+        try {
+            HiddenInterfaceTestClass.packagePrivateInterface();
         } finally {
             ByteBuddyAgent.getInstrumentation().removeTransformer(classFileTransformer);
             AgentBuilder.LambdaInstrumentationStrategy.release(classFileTransformer, ByteBuddyAgent.getInstrumentation());
